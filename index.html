@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Collections · Hierarchy Tree</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --line: #e63946;
+  --mod-w: 152px;     /* width of each module column */
+  --mod-gap: 16px;    /* space between module columns */
+  --v-gap: 20px;      /* vertical space between boxes */
+}
+
+body {
+  background: #f4f8fb;
+  background-image:
+    linear-gradient(rgba(200,220,235,.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,220,235,.35) 1px, transparent 1px);
+  background-size: 25px 25px;
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+.canvas {
+  background: #fff;
+  border-radius: 1.5rem;
+  padding: 2.5rem 2rem 3rem;
+  box-shadow: 0 20px 45px -15px rgba(0,40,70,.2), 0 4px 15px rgba(0,0,0,.04);
+  border: 1px solid #dbe8f2;
+  max-width: 1800px;
+  margin: auto;
+  overflow-x: auto;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0b2f44;
+}
+.title span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .75rem;
+  color: #4b7a9c;
+  background: #e3effa;
+  padding: .2rem .9rem;
+  border-radius: 30px;
+  border: 1px solid #b7d3ea;
+  margin-left: .5rem;
+}
+
+.system-bar {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+  background: #f8fcff;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #d4e6f5;
+}
+.sys-badge {
+  background: #fff;
+  border: 1px solid #b8d2ea;
+  border-radius: 40px;
+  padding: .5rem 1.2rem;
+  font-size: .8rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: #1c4d6e;
+}
+.sys-badge .val { color: #0b2f44; font-weight: 600; }
+
+/* ============ TREE ============ */
+.tree {
+  width: max-content;      /* grows with the modules, so nothing is squeezed */
+  min-width: 100%;
+  margin: 0 auto;
+}
+.root-container { display: flex; flex-direction: column; align-items: center; }
+
+/* BOX */
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: .4rem;
+  width: 100%;
+  min-height: 42px;
+  padding: .6rem .7rem;
+  border-radius: 10px;
+  border: 2px solid #0b2f44;
+  color: #fff;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  box-shadow: 0 6px 12px -6px rgba(0,40,70,.35);
+  position: relative;
+  cursor: help;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.box:hover { transform: translateY(-3px); box-shadow: 0 12px 18px -8px rgba(0,40,70,.4); }
+
+.root {
+  width: auto;
+  background: linear-gradient(135deg, #0d6e4f, #08523a);
+  border-color: #063d2b;
+  font-size: 1.1rem;
+  padding: .8rem 1.8rem;
+}
+.level1 { background: linear-gradient(135deg, #2a9d5c, #1f7a46); border-color: #155c34; font-size: .9rem; }
+.level2 { background: linear-gradient(135deg, #20a86b, #178a56); border-color: #0e633c; font-size: .8rem; font-weight: 500; }
+.level3 { background: linear-gradient(135deg, #2fb87a, #239a64); border-color: #167a4d; font-size: .76rem; }
+.accent { background: linear-gradient(135deg, #e8a020, #c9820e); border-color: #9c6508; }
+.accent-blue { background: linear-gradient(135deg, #2b7bb9, #1d5e91); border-color: #14456b; }
+
+/* stem from root down to the horizontal bar */
+.stem { width: 3px; height: 32px; background: var(--line); }
+
+/* ============ MODULES (one row) ============ */
+.modules {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--mod-gap);
+}
+
+.module {
+  width: var(--mod-w);
+  flex: 0 0 var(--mod-w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding-top: 32px;               /* room for connector */
+}
+/* vertical drop from the bar to each module */
+.module::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 50%;
+  width: 3px; height: 32px;
+  margin-left: -1.5px;
+  background: var(--line);
+}
+/* horizontal bar segment; extends across the gap so the bar is continuous */
+.module::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(var(--mod-gap) / -2);
+  right: calc(var(--mod-gap) / -2);
+  height: 3px;
+  background: var(--line);
+}
+.module:first-child::after { left: 50%; }
+.module:last-child::after  { right: 50%; }
+
+.module-content,
+.child {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: var(--v-gap);
+}
+.module-content { margin-top: var(--v-gap); }
+
+/* short connector above every child box */
+.child > .box::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--v-gap) * -1 - 2px);
+  left: 50%;
+  width: 3px;
+  height: var(--v-gap);
+  margin-left: -1.5px;
+  background: var(--line);
+}
+.child > .box:hover::before { top: calc(var(--v-gap) * -1 - 2px); }
+
+.child > small {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .68rem;
+  color: #4b7a9c;
+  text-align: center;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.scroll-hint {
+  text-align: center;
+  font-size: .75rem;
+  color: #7a9bb5;
+  margin-top: 2rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+
+/* ============ TABS ============ */
+.tabs { display:flex; justify-content:center; flex-wrap:wrap; gap:.6rem; margin-bottom:1.75rem; }
+.tab {
+  font: 600 .8rem 'JetBrains Mono', monospace;
+  padding: .55rem 1.1rem; border-radius: 40px;
+  border: 1px solid #b8d2ea; background: #fff; color: #1c4d6e; cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.tab:hover { background: #e3effa; }
+.tab[aria-selected="true"] { background: #0d6e4f; border-color: #063d2b; color: #fff; }
+.tab:focus-visible { outline: 3px solid #2b7bb9; outline-offset: 2px; }
+.panel[hidden] { display: none; }
+.n {
+  font-family: 'JetBrains Mono', monospace; font-size: .68rem; font-weight: 600;
+  background: rgba(255,255,255,.22); border-radius: 6px; padding: .05rem .4rem; margin-right: .2rem;
+}
+
+/* ============ TOOLTIP (JS positioned, never clipped) ============ */
+#tip {
+  position: fixed;
+  z-index: 9999;
+  width: max-content;
+  max-width: min(400px, 92vw);
+  background: #0b2f44;
+  color: #f0f7ff;
+  font-size: .75rem;
+  line-height: 1.55;
+  padding: .6rem .9rem;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,30,50,.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .1s ease;
+}
+
+#tip .t-h { font-family:'JetBrains Mono',monospace; font-weight:600; font-size:.78rem; color:#7fd6a8; margin-bottom:.35rem; }
+#tip p { margin:0 0 .2rem; }
+#tip .t-l { font-family:'JetBrains Mono',monospace; font-size:.66rem; color:#8fb8d4; margin:.55rem 0 .2rem; }
+#tip pre {
+  font-family:'JetBrains Mono',monospace; font-size:.7rem; line-height:1.5;
+  background:#061a27; color:#e8f3fb; border:1px solid #1d4a66; border-radius:6px;
+  padding:.45rem .6rem; white-space:pre-wrap; overflow-wrap:anywhere;
+}
+
+/* ============ PYTHON TABS (colour-coded by operation) ============ */
+.g-add    { --c1:#2fae6a; --c2:#1f8a50; --bd:#14663a; }
+.g-remove { --c1:#e0525c; --c2:#b83440; --bd:#8c2430; }
+.g-find   { --c1:#3b8fd0; --c2:#2569a3; --bd:#184b78; }
+.g-order  { --c1:#8a5cc8; --c2:#6a3fa6; --bd:#4c2b7c; }
+.g-access { --c1:#1fa3ad; --c2:#12777f; --bd:#0c565c; }
+.g-info   { --c1:#e8a020; --c2:#c07a0c; --bd:#935a06; }
+.py .box.root { background:linear-gradient(135deg,#3776ab,#244f78); border-color:#17375a; font-family:'JetBrains Mono',monospace; font-size:1rem; }
+.py .box[class*="g-"] { background:linear-gradient(135deg,var(--c1),var(--c2)); border-color:var(--bd); }
+.py .box.level1 { font-size:.95rem; }
+.py .box.level2 { font-family:'JetBrains Mono',monospace; font-size:.76rem; font-weight:600; }
+.py .box[data-k] { cursor:pointer; }
+.py .module { --mod-w:190px; }
+.dot { display:inline-block; width:.8rem; height:.8rem; border-radius:50%; margin-right:.45rem; vertical-align:-1px; background:var(--c1); border:2px solid var(--bd); }
+
+/* ============ CLICK THEORY MODAL ============ */
+#modal { position:fixed; inset:0; z-index:10000; background:rgba(6,26,39,.55); display:flex; align-items:center; justify-content:center; padding:1rem; }
+#modal[hidden] { display:none; }
+.m-card { background:#fff; width:min(600px,100%); max-height:88vh; overflow:auto; border-radius:14px; border-top:8px solid var(--c1,#3776ab); box-shadow:0 25px 60px rgba(0,20,40,.45); padding:1.2rem 1.4rem 1.4rem; position:relative; }
+.m-x { position:absolute; top:.6rem; right:.8rem; border:0; background:#e3effa; color:#0b2f44; width:2rem; height:2rem; border-radius:50%; font-size:1.1rem; cursor:pointer; }
+.m-x:hover { background:#cfe3f5; }
+.m-h { font-family:'JetBrains Mono',monospace; font-weight:600; font-size:1rem; color:#0b2f44; padding-right:2.4rem; margin-bottom:.7rem; word-break:break-word; }
+.m-sec { font-family:'JetBrains Mono',monospace; font-size:.68rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--c2,#244f78); margin:.9rem 0 .3rem; }
+.m-p { font-size:.92rem; line-height:1.7; color:#1b3a4d; }
+.m-card pre { font-family:'JetBrains Mono',monospace; font-size:.78rem; line-height:1.55; background:#061a27; color:#e8f3fb; border-radius:8px; padding:.65rem .8rem; white-space:pre-wrap; overflow-wrap:anywhere; }
+.m-card pre.out { background:#0e3b2a; color:#aef0c8; }
+</style>
+</head>
+
+<body>
+<div class="canvas">
+
+  <div class="title">Python Collections <span>list · dict · tuple · set</span></div>
+
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+
+  <div id="extra"></div>
+
+  <div class="scroll-hint">← Scroll horizontally to see all 10 modules →</div>
+</div>
+
+<div id="tip"></div>
+<div id="modal" hidden><div class="m-card" role="dialog" aria-modal="true">
+  <button class="m-x" id="mx" aria-label="Close">×</button>
+  <div class="m-h" id="mh"></div>
+  <div class="m-sec">Theory</div><p class="m-p" id="mp"></p>
+  <div class="m-sec">Syntax</div><pre id="ms"></pre>
+  <div class="m-sec">Example</div><pre id="me"></pre>
+  <div class="m-sec">Output</div><pre class="out" id="mo"></pre>
+</div></div>
+
+<script>
+(function () {
+  var tip = document.getElementById('tip');
+
+  function show(e) {
+    var box = e.target.closest('.box[data-tooltip]');
+    if (!box) return;
+    tip.textContent = box.getAttribute('data-tooltip');
+    tip.style.opacity = '1';
+    var r = box.getBoundingClientRect();
+    var w = tip.offsetWidth, h = tip.offsetHeight, m = 8;
+    var left = Math.min(Math.max(m, r.left + r.width / 2 - w / 2), window.innerWidth - w - m);
+    var top = r.top - h - 10;
+    if (top < m) top = r.bottom + 10;          // flip below if no room above
+    if (top + h > window.innerHeight - m) top = Math.max(m, window.innerHeight - h - m);
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+  function hide() { tip.style.opacity = '0'; }
+  document.addEventListener('mouseover', show);
+  document.addEventListener('mouseout', function (e) {
+    if (e.target.closest('.box[data-tooltip]')) hide();
+  });
+  document.addEventListener('scroll', hide, true);
+})();
+</script>
+<script>
+(function () {
+  var P = [
+  { tab:'Python · List', py:1 },
+  { tab:'Python · Dict', py:1 },
+  { tab:'Python · Tuple', py:1 },
+  { tab:'Python · Set', py:1 }];
+
+  /* ---- Python data structures: groups of [label, theory, syntax, example, output] ---- */
+  var TIP='👆 Click गर्नुहोस् → theory + example';
+  var PY = {
+  0:{root:'nums = [10, 20, 30]', rt:['List एउटा ordered र mutable collection हो: items को क्रम हुन्छ र पछि थप्न, हटाउन, बदल्न मिल्छ। Square brackets [ ] मा लेखिन्छ, र index 0 बाट सुरु हुन्छ।','nums = [item1, item2, ...]','nums = [10, 20, 30]\nprint(nums[0], len(nums))','10 3'],
+   groups:[
+   ['➕ Add','g-add',[
+    ['nums.append(40)','List को अन्त्यमा एउटा item थप्छ। मूल list नै change हुन्छ (in-place) र return value None हुन्छ।','list.append(item)','nums = [10, 20, 30]\nnums.append(40)\nprint(nums)','[10, 20, 30, 40]'],
+    ['nums.insert(1, 15)','दिइएको index मा item घुसाउँछ; त्यसपछिका items दायाँतिर सर्छन्।','list.insert(index, item)','nums = [10, 20, 30]\nnums.insert(1, 15)\nprint(nums)','[10, 15, 20, 30]']]],
+   ['➖ Remove','g-remove',[
+    ['nums.remove(20)','दिइएको value को पहिलो match हटाउँछ। Value नभए ValueError आउँछ।','list.remove(value)','nums = [10, 20, 30, 20]\nnums.remove(20)\nprint(nums)','[10, 30, 20]'],
+    ['nums.pop(1)','दिइएको index को item हटाएर त्यही value return गर्छ। Index नदिए अन्तिम item हटाउँछ।','list.pop(index=-1)','nums = [10, 20, 30]\nx = nums.pop(1)\nprint(x, nums)','20 [10, 30]'],
+    ['nums.clear()','List का सबै items हटाएर खाली list बनाउँछ।','list.clear()','nums = [10, 20, 30]\nnums.clear()\nprint(nums)','[]']]],
+   ['🔍 Search','g-find',[
+    ['nums.index(20)','Value को पहिलो position (index) फर्काउँछ। Value नभए ValueError आउँछ।','list.index(value)','nums = [10, 20, 30]\nprint(nums.index(20))','1'],
+    ['nums.count(20)','Value list मा कति पटक आएको छ भनेर गन्छ।','list.count(value)','nums = [10, 20, 20, 30]\nprint(nums.count(20))','2']]],
+   ['🔀 Order','g-order',[
+    ['nums.sort()','List लाई in-place ascending क्रममा मिलाउँछ। reverse=True दिए descending हुन्छ। Return value None हुन्छ।','list.sort(reverse=False)','nums = [30, 10, 20]\nnums.sort()\nprint(nums)','[10, 20, 30]'],
+    ['nums.reverse()','List को क्रम उल्टो पार्छ (in-place)। यसले sort गर्दैन, केवल क्रम उल्टाउँछ।','list.reverse()','nums = [10, 20, 30]\nnums.reverse()\nprint(nums)','[30, 20, 10]']]]
+   ]},
+  1:{root:'user = {"name": "Ram"}', rt:['Dictionary key → value को जोडी राख्ने mutable collection हो। Curly braces { } मा लेखिन्छ। Key unique हुनुपर्छ र index को सट्टा key बाट value निकालिन्छ।','user = {key1: value1, key2: value2}','user = {"name": "Ram", "age": 22}\nprint(user["name"])','Ram'],
+   groups:[
+   ['📖 Access','g-access',[
+    ['user["name"]','Key बाट value ल्याउँछ। Key नभए KeyError आउँछ।','dict[key]','user = {"name": "Ram"}\nprint(user["name"])','Ram'],
+    ['user.get("name")','Key बाट value ल्याउँछ, तर key नभए error को सट्टा None (वा दिइएको default) फर्काउँछ। यो safe तरिका हो।','dict.get(key, default=None)','user = {"name": "Ram"}\nprint(user.get("name"))\nprint(user.get("age", 0))','Ram\n0'],
+    ['user.keys()','Dictionary का सबै keys को view दिन्छ।','dict.keys()','user = {"name": "Ram", "age": 22}\nprint(list(user.keys()))',"['name', 'age']"],
+    ['user.values()','Dictionary का सबै values को view दिन्छ।','dict.values()','user = {"name": "Ram", "age": 22}\nprint(list(user.values()))',"['Ram', 22]"],
+    ['user.items()','हरेक (key, value) pair को view दिन्छ। for loop मा for k, v in user.items() गरेर प्रयोग हुन्छ।','dict.items()','user = {"name": "Ram", "age": 22}\nfor k, v in user.items():\n    print(k, v)','name Ram\nage 22']]],
+   ['➕ Add / Update','g-add',[
+    ['user["country"] = "Nepal"','नयाँ key थप्छ। Key पहिले नै भए उसको value बदलिन्छ।','dict[key] = value','user = {"name": "Ram"}\nuser["country"] = "Nepal"\nprint(user)',"{'name': 'Ram', 'country': 'Nepal'}"],
+    ['user["age"] = 22','"age" key मा 22 राख्छ। Key नभए थपिन्छ, भए update हुन्छ।','dict[key] = value','user = {"name": "Ram"}\nuser["age"] = 22\nprint(user)',"{'name': 'Ram', 'age': 22}"],
+    ['user.update({"age": 23})','एकैपटक एक वा धेरै key-value थप्छ वा बदल्छ।','dict.update({key: value, ...})','user = {"name": "Ram", "age": 22}\nuser.update({"age": 23})\nprint(user)',"{'name': 'Ram', 'age': 23}"]]],
+   ['➖ Remove','g-remove',[
+    ['user.pop("age")','Key हटाएर उसको value return गर्छ। Key नभए KeyError आउँछ (default दिएमा आउँदैन)।','dict.pop(key, default)','user = {"name": "Ram", "age": 22}\nx = user.pop("age")\nprint(x, user)',"22 {'name': 'Ram'}"],
+    ['del user["age"]','Key र उसको value दुवै हटाउँछ। यसले केही return गर्दैन।','del dict[key]','user = {"name": "Ram", "age": 22}\ndel user["age"]\nprint(user)',"{'name': 'Ram'}"],
+    ['user.clear()','Dictionary का सबै items हटाएर खाली बनाउँछ।','dict.clear()','user = {"name": "Ram"}\nuser.clear()\nprint(user)','{}']]]
+   ]},
+  2:{root:'point = (10, 20, 10)', rt:['Tuple ordered तर immutable collection हो: एकपटक बनेपछि items बदल्न, थप्न वा हटाउन मिल्दैन। Round brackets ( ) मा लेखिन्छ। Fixed data (जस्तै coordinates) का लागि उपयुक्त।','point = (item1, item2, ...)','point = (10, 20, 10)\nprint(point[1])','20'],
+   groups:[
+   ['📦 Basics','g-info',[
+    ['point = (10, 20, 10)','Tuple बनाउने तरिका। Items को क्रम सुरक्षित रहन्छ र duplicate values हुन सक्छन्। एउटै item भए (10,) जस्तै comma चाहिन्छ।','t = (a, b, c)','point = (10, 20, 10)\nprint(point, len(point))','(10, 20, 10) 3'],
+    ['point[0]','Index बाट item निकाल्छ (0 बाट सुरु)। List जस्तै slicing पनि चल्छ।','tuple[index]','point = (10, 20, 10)\nprint(point[0])\nprint(point[-1])','10\n10'],
+    ['point[0] = 5','Tuple immutable भएकाले यसरी value बदल्न खोज्दा TypeError आउँछ। बदल्नै परे नयाँ tuple बनाउनुपर्छ।','tuple[index] = value   # ✗ error','point = (10, 20, 10)\npoint[0] = 5','TypeError: \'tuple\' object does not support item assignment']]],
+   ['🔍 Search','g-find',[
+    ['point.index(20)','Value को पहिलो position (index) फर्काउँछ। Value नभए ValueError आउँछ।','tuple.index(value)','point = (10, 20, 10)\nprint(point.index(20))','1'],
+    ['point.count(10)','Value tuple मा कति पटक आएको छ भनेर गन्छ।','tuple.count(value)','point = (10, 20, 10)\nprint(point.count(10))','2']]]
+   ]},
+  3:{root:'s = {10, 20, 30}', rt:['Set unique items को unordered र mutable collection हो: duplicate हुँदैन, index हुँदैन (s[0] चल्दैन)। Curly braces { } मा लेखिन्छ। खाली set बनाउन set() प्रयोग गर्नुपर्छ, किनभने {} ले खाली dictionary बनाउँछ।','s = {item1, item2, ...}\ns = set(iterable)','s = {10, 20, 20, 30}\nprint(s)\nprint(len(s))','{10, 20, 30}\n3'],
+   groups:[
+   ['➕ Add','g-add',[
+    ['s.add(40)','Set मा एउटा नयाँ item थप्छ। Item पहिले नै भए केही हुँदैन किनभने duplicate allowed छैन।','set.add(item)','s = {10, 20, 30}\ns.add(40)\ns.add(20)\nprint(s)','{10, 20, 30, 40}   # order फरक हुन सक्छ'],
+    ['s.update([40, 50])','एकैपटक धेरै items थप्छ। List, tuple, set जस्ता कुनै पनि iterable दिन सकिन्छ।','set.update(iterable)','s = {10, 20}\ns.update([30, 40, 20])\nprint(s)','{10, 20, 30, 40}   # order फरक हुन सक्छ']]],
+   ['➖ Remove','g-remove',[
+    ['s.remove(20)','Item हटाउँछ। Item set मा नभए KeyError आउँछ।','set.remove(item)','s = {10, 20, 30}\ns.remove(20)\nprint(s)','{10, 30}'],
+    ['s.discard(20)','Item हटाउँछ, तर item नभए पनि error आउँदैन। यो remove() भन्दा safe तरिका हो।','set.discard(item)','s = {10, 20, 30}\ns.discard(99)   # error आउँदैन\ns.discard(20)\nprint(s)','{10, 30}'],
+    ['s.pop()','Set unordered भएकाले कुनै एउटा (arbitrary) item हटाएर return गर्छ। खाली set मा KeyError आउँछ।','set.pop()','s = {10, 20, 30}\nx = s.pop()\nprint(x, s)','10 {20, 30}   # कुन item हट्छ निश्चित हुँदैन'],
+    ['s.clear()','Set का सबै items हटाएर खाली बनाउँछ।','set.clear()','s = {10, 20, 30}\ns.clear()\nprint(s)','set()']]],
+   ['🔗 Set Math','g-access',[
+    ['a.union(b)','दुवै set का सबै unique items मिलाएर नयाँ set दिन्छ। a | b ले पनि त्यही काम गर्छ।','a.union(b)    # a | b','a = {1, 2, 3}\nb = {3, 4, 5}\nprint(a.union(b))','{1, 2, 3, 4, 5}'],
+    ['a.intersection(b)','दुवै set मा common भएका items मात्र दिन्छ। a & b ले पनि त्यही काम गर्छ।','a.intersection(b)    # a & b','a = {1, 2, 3}\nb = {3, 4, 5}\nprint(a.intersection(b))','{3}'],
+    ['a.difference(b)','a मा भएर b मा नभएका items दिन्छ। क्रम महत्त्वपूर्ण छ: a - b र b - a फरक हुन्छन्।','a.difference(b)    # a - b','a = {1, 2, 3}\nb = {3, 4, 5}\nprint(a.difference(b))','{1, 2}'],
+    ['a.symmetric_difference(b)','दुवैमध्ये एउटामा मात्र भएका items दिन्छ (common हटाएर)। a ^ b ले पनि त्यही काम गर्छ।','a.symmetric_difference(b)    # a ^ b','a = {1, 2, 3}\nb = {3, 4, 5}\nprint(a.symmetric_difference(b))','{1, 2, 4, 5}']]],
+   ['🔍 Check','g-find',[
+    ['20 in s','Item set मा छ कि छैन जाँच्छ। Set मा यो धेरै छिटो (fast) हुन्छ, list भन्दा।','item in set','s = {10, 20, 30}\nprint(20 in s)\nprint(99 in s)','True\nFalse'],
+    ['a.issubset(b)','a का सबै items b मा छन् भने True (a, b को subset हो)।','a.issubset(b)    # a <= b','a = {1, 2}\nb = {1, 2, 3}\nprint(a.issubset(b))','True'],
+    ['a.issuperset(b)','a ले b का सबै items समेटेको छ भने True (a, b को superset हो)।','a.issuperset(b)    # a >= b','a = {1, 2, 3}\nb = {1, 2}\nprint(a.issuperset(b))','True'],
+    ['a.isdisjoint(b)','दुवै set मा कुनै common item छैन भने True।','a.isdisjoint(b)','a = {1, 2}\nb = {3, 4}\nprint(a.isdisjoint(b))','True']]]
+   ]}
+  };
+  var K = {};
+  function buildPy(i){
+    var d=PY[i], gi, ci, h='<section class="panel py" id="p'+i+'" hidden>';
+    K['r'+i]={c:'',h:d.root,t:d.rt};
+    h+='<div class="system-bar">';
+    d.groups.forEach(function(g){ h+='<div class="sys-badge"><i class="dot '+g[1]+'"></i>'+esc(g[0].replace(/^\S+\s/,''))+'</div>'; });
+    h+='<div class="sys-badge">👆 कुनै box मा <span class="val">click</span> गर्नुहोस्</div></div>';
+    h+='<div class="tree"><div class="root-container"><div class="box root" data-k="r'+i+'" data-tooltip="'+esc(TIP)+'">'+esc(d.root)+'</div><div class="stem"></div><div class="modules">';
+    d.groups.forEach(function(g,gi){
+      h+='<div class="module"><div class="box level1 '+g[1]+'" data-tooltip="'+esc(g[0])+'">'+esc(g[0])+'</div><div class="module-content"><div class="child">';
+      g[2].forEach(function(m,ci){
+        var k=i+'-'+gi+'-'+ci; K[k]={c:g[1],h:m[0],t:[m[1],m[2],m[3],m[4]]};
+        h+='<div class="box level2 '+g[1]+'" data-k="'+k+'" data-tooltip="'+esc(TIP)+'">'+esc(m[0])+'</div>';
+      });
+      h+='</div></div></div>';
+    });
+    return h+'</div></div></div></section>';
+  }
+
+  function esc(t){return String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+  var tabs=document.getElementById('tabs'), extra=document.getElementById('extra'), html='';
+  for(var i=0;i<P.length;i++) html+=buildPy(i);
+  extra.innerHTML=html;
+  P.forEach(function(d,i){
+    var b=document.createElement('button');
+    b.className='tab'; b.type='button'; b.setAttribute('role','tab'); b.textContent=d.tab;
+    b.addEventListener('click',function(){show(i);});
+    tabs.appendChild(b);
+  });
+  function show(n){
+    P.forEach(function(_,i){
+      document.getElementById('p'+i).hidden=(i!==n);
+      tabs.children[i].setAttribute('aria-selected',i===n?'true':'false');
+    });
+    document.getElementById('tip').style.opacity='0';
+    document.querySelector('.canvas').scrollLeft=0;
+    var c=document.querySelectorAll('#p'+n+' .module').length;
+    document.querySelector('.scroll-hint').textContent='← Scroll horizontally to see all '+c+' modules →';
+    history.replaceState(null,'','#'+(n+1));
+  }
+
+  var modal=document.getElementById('modal');
+  function openM(k){
+    var e=K[k]; if(!e) return;
+    var card=modal.querySelector('.m-card');
+    card.className='m-card '+e.c;
+    document.getElementById('mh').textContent=e.h;
+    document.getElementById('mp').textContent=e.t[0];
+    document.getElementById('ms').textContent=e.t[1];
+    document.getElementById('me').textContent=e.t[2];
+    document.getElementById('mo').textContent=e.t[3];
+    document.getElementById('tip').style.opacity='0';
+    modal.hidden=false;
+  }
+  function closeM(){ modal.hidden=true; }
+  document.addEventListener('click',function(ev){
+    var b=ev.target.closest('.box[data-k]');
+    if(b){ openM(b.getAttribute('data-k')); return; }
+    if(ev.target===modal || ev.target.id==='mx') closeM();
+  });
+  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape') closeM(); });
+  var start=parseInt((location.hash||'#1').slice(1),10)-1;
+  show(start>=0&&start<P.length?start:0);
+})();
+</script>
+</body>
+</html>
